@@ -1,0 +1,192 @@
+---
+// src/pages/index.astro
+// Stahování dat ze Sanity (s pojistkou proti chybám)
+const projectId = "xvktp7qf";
+const dataset = "production";
+
+const projectQuery = encodeURIComponent('*[_type == "project"]{title, videoUrl, "imageUrl": thumbnail.asset->url, description}');
+const photoQuery = encodeURIComponent('*[_type == "photo"]{title, category, "imageUrl": image.asset->url}');
+const settingsQuery = encodeURIComponent('*[_type == "settings"][0]');
+
+const [projectRes, photoRes, settingsRes] = await Promise.all([
+	fetch(`https://${projectId}.api.sanity.io/v2021-10-21/data/query/${dataset}?query=${projectQuery}`),
+	fetch(`https://${projectId}.api.sanity.io/v2021-10-21/data/query/${dataset}?query=${photoQuery}`),
+	fetch(`https://${projectId}.api.sanity.io/v2021-10-21/data/query/${dataset}?query=${settingsQuery}`)
+]);
+
+const { result: projects } = await projectRes.json();
+const { result: photos } = await photoRes.json();
+const { result: settings } = await settingsRes.json();
+
+// Záložní české texty (kdyby Šimon v Sanity něco zapomněl vyplnit)
+const siteName = settings?.name || "ŠIMON ČERMÁK";
+const siteJob = settings?.job || "KAMERA & FOTOGRAFIE";
+const siteHeroTitle = settings?.heroTitle || "Zachyťte okamžik,\nvyprávějte příběh.";
+const siteEmail = settings?.email || "ahoj@simoncermak.cz";
+const siteContactHeading = settings?.contactHeading || "Máte vizi? Pojďme ji natočit.";
+---
+
+<!DOCTYPE html>
+<html lang="cs" class="scroll-smooth bg-[#fcfcfc]">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{siteName} | Portfolio</title>
+		
+		<script is:inline src="https://cdn.tailwindcss.com"></script>
+		<script is:inline src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+		<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+		<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+		
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400;1,600&display=swap" rel="stylesheet">
+		
+		<script is:inline>
+			tailwind.config = {
+				theme: {
+					extend: {
+						fontFamily: {
+							sans: ['Inter', 'sans-serif'],
+							serif: ['Playfair Display', 'serif'],
+						},
+						colors: {
+							brand: '#111111',  // Měkká černá (luxusnější než čistá černá)
+							paper: '#fcfcfc',  // Zlomená bílá jako prémiový papír
+							accent: '#8c8c8c'  // Elegantní šedá
+						}
+					}
+				}
+			}
+		</script>
+
+		<style is:inline>
+			/* Plynulý scroll (Lenis) */
+			html.lenis { height: auto; }
+			.lenis.lenis-smooth { scroll-behavior: auto; }
+			.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+			.lenis.lenis-stopped { overflow: hidden; }
+			
+			body { background-color: #fcfcfc; color: #111111; overflow-x: hidden; }
+			
+			/* Třída pro zachování odstavců ze Sanity */
+			.pre-line { white-space: pre-line; }
+			
+			/* GSAP skryté prvky na začátku */
+			.reveal { opacity: 0; transform: translateY(40px); }
+		</style>
+	</head>
+
+	<body class="antialiased selection:bg-brand selection:text-paper">
+
+		<nav class="fixed w-full z-50 flex justify-between items-center px-6 md:px-12 py-8 bg-paper/80 backdrop-blur-md border-b border-black/5">
+			<a href="#" class="text-xl md:text-2xl font-serif font-bold tracking-tight text-brand uppercase">{siteName}</a>
+			<div class="hidden md:flex space-x-12 text-[11px] tracking-[0.2em] uppercase font-semibold text-accent">
+				<a href="#videa" class="hover:text-brand transition-colors duration-300">Filmová tvorba</a>
+				<a href="#fotografie" class="hover:text-brand transition-colors duration-300">Fotografie</a>
+				<a href="mailto:{siteEmail}" class="text-brand hover:underline underline-offset-4">Spolupráce</a>
+			</div>
+		</nav>
+
+		<section class="relative min-h-[90vh] flex flex-col justify-center px-6 md:px-12 max-w-[100rem] mx-auto pt-20">
+			<div class="reveal max-w-5xl">
+				<p class="text-accent text-[10px] md:text-xs tracking-[0.3em] uppercase mb-8 font-semibold">{siteJob}</p>
+				<h1 class="pre-line font-serif text-5xl md:text-[6.5vw] font-semibold leading-[1.05] text-brand tracking-tight mb-12">
+					{siteHeroTitle}
+				</h1>
+				<div class="flex flex-wrap gap-6 items-center">
+					<a href="#videa" class="bg-brand text-paper px-8 py-4 text-[11px] font-semibold tracking-widest uppercase rounded-sm hover:bg-black transition-all duration-300">Zobrazit portfolio</a>
+					<a href="#fotografie" class="text-brand text-[11px] font-semibold tracking-widest uppercase hover:text-accent transition-colors duration-300 flex items-center gap-2">
+						Prohlédnout fotky 
+						<span class="text-lg">↓</span>
+					</a>
+				</div>
+			</div>
+		</section>
+
+		<section id="videa" class="py-32 px-6 md:px-12 max-w-[100rem] mx-auto">
+			<div class="flex flex-col md:flex-row md:items-end justify-between mb-24 reveal border-b border-black/10 pb-8">
+				<h2 class="font-serif text-4xl md:text-5xl font-semibold text-brand">Filmová tvorba</h2>
+				<p class="text-accent text-[11px] tracking-[0.2em] uppercase mt-4 md:mt-0">Režie & Kamera</p>
+			</div>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-20">
+				{projects && projects.length > 0 ? projects.map((p) => (
+					<div class="project-card reveal group cursor-pointer">
+						<a href={p.videoUrl} target="_blank" class="block relative overflow-hidden aspect-[16/9] bg-gray-100 mb-6">
+							<img src={p.imageUrl} alt={p.title} class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+							<div class="absolute inset-0 bg-brand/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
+								<span class="text-paper border border-paper px-6 py-3 text-[10px] uppercase tracking-widest backdrop-blur-sm">Přehrát video</span>
+							</div>
+						</a>
+						<div class="flex justify-between items-start pr-4">
+							<div>
+								<h3 class="text-xl font-serif font-semibold text-brand">{p.title}</h3>
+								<p class="text-accent text-sm mt-1">{p.description || "Video projekt"}</p>
+							</div>
+						</div>
+					</div>
+				)) : (
+					<p class="text-accent italic">Zatím nebyly přidány žádné video projekty.</p>
+				)}
+			</div>
+		</section>
+
+		<section id="fotografie" class="py-32 px-6 md:px-12 max-w-[100rem] mx-auto bg-paper">
+			<div class="flex flex-col md:flex-row md:items-end justify-between mb-24 reveal border-b border-black/10 pb-8">
+				<h2 class="font-serif text-4xl md:text-5xl font-semibold text-brand">Fotografie</h2>
+				<p class="text-accent text-[11px] tracking-[0.2em] uppercase mt-4 md:mt-0">Fotografické portfolio</p>
+			</div>
+
+			<div class="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
+				{photos && photos.length > 0 ? photos.map((photo) => (
+					<div class="break-inside-avoid photo-card reveal group relative overflow-hidden bg-gray-100">
+						<img src={photo.imageUrl} alt={photo.title} class="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+						<div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand/80 to-transparent p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+							<p class="text-[9px] tracking-[0.2em] uppercase text-paper/70 mb-1">{photo.category || "Kolekce"}</p>
+							<h4 class="text-paper font-serif text-lg">{photo.title}</h4>
+						</div>
+					</div>
+				)) : (
+					<p class="text-accent italic">Zatím nebyly přidány žádné fotografie.</p>
+				)}
+			</div>
+		</section>
+
+		<section class="py-40 px-6 text-center bg-brand text-paper mt-20">
+			<div class="max-w-3xl mx-auto reveal">
+				<p class="text-accent text-[10px] tracking-[0.3em] uppercase mb-8">{siteName}</p>
+				<h2 class="font-serif text-4xl md:text-6xl font-semibold mb-12 leading-tight">{siteContactHeading}</h2>
+				<a href={`mailto:${siteEmail}`} class="inline-block border-b border-paper/30 hover:border-paper pb-2 text-xl md:text-2xl tracking-wide transition-colors duration-300">
+					{siteEmail}
+				</a>
+			</div>
+		</section>
+
+		<footer class="py-8 text-center bg-brand text-accent text-[10px] tracking-widest uppercase border-t border-paper/10">
+			© 2026 {siteName}. Všechna práva vyhrazena.
+		</footer>
+
+		<script is:inline>
+			// Hladký prémiový scroll
+			const lenis = new Lenis({ duration: 1.5, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+			function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+			requestAnimationFrame(raf);
+
+			// GSAP animace pro postupné objevování prvků (Fade-up)
+			gsap.registerPlugin(ScrollTrigger);
+			gsap.utils.toArray('.reveal').forEach((el) => {
+				gsap.to(el, {
+					scrollTrigger: {
+						trigger: el,
+						start: "top 85%", 
+					},
+					opacity: 1,
+					y: 0,
+					duration: 1.2,
+					ease: "power3.out"
+				});
+			});
+		</script>
+	</body>
+</html>
